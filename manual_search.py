@@ -220,7 +220,7 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
                     jenis_stakeholder = entitas.get("Jenis StakeHolder", "").strip()
                     negara = entitas.get("Negara", "").strip() 
                     kota = entitas.get("Kota", "").strip() 
-                    catatan = entitas.get("Catatan", "").strip() 
+                    prompt_user = entitas.get("Perintah", "").strip() 
                     
                     if not komoditas or not jenis_stakeholder: 
                         continue
@@ -238,7 +238,7 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
                         status_pasar = jenis_stakeholder.title()
                         stakeholder_label = jenis_stakeholder.title()
 
-                    writer.writerow([counter, komoditas, status_pasar, kota, negara]) 
+                    writer.writerow([counter, komoditas, status_pasar, kota, negara, prompt_user]) 
                     
                     lookup_items.append({
                         "id_entitas": counter,
@@ -246,7 +246,7 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
                         "stakeholder": stakeholder_label,
                         "negara": negara,
                         "kota": kota,
-                        "analisis_makro": catatan,
+                        "prompt_user": prompt_user,
                     })
                     counter += 1
             return lookup_items
@@ -270,17 +270,17 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
         Tugas Anda adalah merumuskan TIGA (3) kueri pencarian lokal spesifik (Bahasa Inggris atau lokal) untuk dimasukkan ke Google Maps berdasarkan file CSV yang dilampirkan.
 
         TARGET STRATEGI STRUKTUR TIER KUERI (WAJIB PATUH):
-        - Jika 'Status_Pasar' bernilai 'Demand' (Pembeli), pecah kueri berdasarkan 3 tingkatan skala bisnis dari kecil ke besar:
+        - Jika 'status_pasar' merupakan Demand (Pembeli), pecah kueri berdasarkan 3 tingkatan skala bisnis dari kecil ke besar:
           * Kueri 1 (Tier 1 - Skala Kecil / Konsumen Ritel Komersial): Fokus mencari bisnis pengguna akhir yang langsung menyerap produk (contoh: Kafe, Roastery lokal, Bakery, Restoran lokal, dan sebagainya).
           * Kueri 2 (Tier 2 - Skala Menengah / Grosir & Distributor): Fokus mencari rantai distribusi tengah yg berhubungan dengan produk (contoh: B2B Wholesaler, local supplier, distributor bahan baku, dan sebagainya).
           * Kueri 3 (Tier 3 - Skala Besar / Importir & Industri Manufaktur): Fokus mencari penyerap volume masif produk (contoh: Main Importer, Trading House internasional, F&B factory, dan sebagainya).
           
-        - Jika 'Status_Pasar' bernilai 'Supply' (Supplier/Penjual), pecah kueri berdasarkan tingkatan pasokan:
+        - Jika 'status_pasar' merupakan Supply (Supplier/Penjual), pecah kueri berdasarkan tingkatan pasokan:
           * Kueri 1 (Tier 1 - Pengrajin/Produsen Kecil): Pembuat lokal, workshop, asosiasi petani lokal atau sebagainya.
           * Kueri 2 (Tier 2 - Pabrik/Supplier Menengah): Supplier B2B lokal, pabrikasi wilayah, processing mill menengah atau sebagainya.
           * Kueri 3 (Tier 3 - Pabrik Besar/Eksportir Utama): Pabrik manufaktur utama skala industri, Perusahaan perdagangan ekspor atau sebagainya.
 
-        - Jika 'Status_Pasar' adalah entitas lain (contoh: Forwarder, Bea Cukai, Agen Logistik, dll), pecah kueri berdasarkan jangkauan atau skala operasi:
+        - Jika 'status_pasar' merupakan entitas lain (contoh: Forwarder, Bea Cukai, Agen Logistik, dll), pecah kueri berdasarkan jangkauan atau skala operasi:
           * Kueri 1 (Tier 1 - Skala Lokal/Cabang): Kantor cabang lokal, perantara logistik kecil, atau jasa custom clearance perorangan/lokal.
           * Kueri 2 (Tier 2 - Skala Menengah/Nasional): Perusahaan forwarder/logistik skala nasional atau perusahaan B2B kepabeanan.
           * Kueri 3 (Tier 3 - Skala Besar/Pusat/Internasional): Otoritas pelabuhan utama (Port Authority), instansi resmi Bea Cukai pusat (Customs Office), atau perusahaan logistik multinasional.
