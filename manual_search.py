@@ -267,35 +267,50 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
         prompt_batch_query = """
         Bertindaklah sebagai B2B Lead Generation Specialist & Market Intelligence Internasional.
         Saya adalah seorang eksportir. Saya ingin melihat demand maupun supply dari suatu komoditas.
-        Tugas Anda adalah merumuskan TIGA (3) kueri pencarian lokal spesifik (Bahasa Inggris atau lokal) untuk dimasukkan ke Google Maps berdasarkan file CSV yang dilampirkan.
+        Tugas Anda adalah merumuskan kueri pencarian lokal spesifik untuk dimasukkan ke Google Maps berdasarkan file CSV yang dilampirkan.
+        Perhatikan instruksi di prompt_user (jika ada).
 
-        TARGET STRATEGI STRUKTUR TIER KUERI (WAJIB PATUH):
-        - Jika 'status_pasar' merupakan Demand (Pembeli), pecah kueri berdasarkan 3 tingkatan skala bisnis dari kecil ke besar:
-          * Kueri 1 (Tier 1 - Skala Kecil / Konsumen Ritel Komersial): Fokus mencari bisnis pengguna akhir yang langsung menyerap produk (contoh: Kafe, Roastery lokal, Bakery, Restoran lokal, dan sebagainya).
-          * Kueri 2 (Tier 2 - Skala Menengah / Grosir & Distributor): Fokus mencari rantai distribusi tengah yg berhubungan dengan produk (contoh: B2B Wholesaler, local supplier, distributor bahan baku, dan sebagainya).
-          * Kueri 3 (Tier 3 - Skala Besar / Importir & Industri Manufaktur): Fokus mencari penyerap volume masif produk (contoh: Main Importer, Trading House internasional, F&B factory, dan sebagainya).
-          
-        - Jika 'status_pasar' merupakan Supply (Supplier/Penjual), pecah kueri berdasarkan tingkatan pasokan:
-          * Kueri 1 (Tier 1 - Pengrajin/Produsen Kecil): Pembuat lokal, workshop, asosiasi petani lokal atau sebagainya.
-          * Kueri 2 (Tier 2 - Pabrik/Supplier Menengah): Supplier B2B lokal, pabrikasi wilayah, processing mill menengah atau sebagainya.
-          * Kueri 3 (Tier 3 - Pabrik Besar/Eksportir Utama): Pabrik manufaktur utama skala industri, Perusahaan perdagangan ekspor atau sebagainya.
+        ATURAN UTAMA KONDISIONAL PENCARIAN (WAJIB DIPATUHI):
+        1. JIKA PADA 'prompt_user' TERDAPAT URL SPESIFIK:
+            - Jangan gunakan aturan 3 tingkatan skala bisnis.
+            - Anda HANYA BENTUK SATU (1) target di dalam array `search_targets`.
+            - Isi `maps_search_query` dengan URL tersebut secara utuh dan persis tanpa mengubahnya menjadi teks biasa.
+            - Isi `tipe_bisnis` sesuai konteks jenis stakeholder (misal: "Briket Buyer Area Johor Malaysia").
 
-        - Jika 'status_pasar' merupakan entitas lain (contoh: Forwarder, Bea Cukai, Agen Logistik, dll), pecah kueri berdasarkan jangkauan atau skala operasi:
-          * Kueri 1 (Tier 1 - Skala Lokal/Cabang): Kantor cabang lokal, perantara logistik kecil, atau jasa custom clearance perorangan/lokal.
-          * Kueri 2 (Tier 2 - Skala Menengah/Nasional): Perusahaan forwarder/logistik skala nasional atau perusahaan B2B kepabeanan.
-          * Kueri 3 (Tier 3 - Skala Besar/Pusat/Internasional): Otoritas pelabuhan utama (Port Authority), instansi resmi Bea Cukai pusat (Customs Office), atau perusahaan logistik multinasional.
+        2. JIKA PADA 'prompt_user' TIDAK ADA URL SPESIFIK (Pencarian Teks Standar):
+            - Jika 'status_pasar' mengarah ke Demand (Pembeli), gunakan 3 tier: (1) Ritel Komersial, (2) Grosir/Distributor, (3) Importir/Manufaktur.
+            - Jika 'status_pasar' mengarah ke Supply (Supplier), gunakan 3 tier: (1) Pengrajin/Workshop, (2) Pabrik/Supplier Menengah, (3) Pabrik Besar/Eksportir.
+            - Jika 'status_pasar' netral/lainnya, gunakan 3 tier: (1) Kantor Cabang, (2) Perusahaan Nasional, (3) Instansi Pusat/Multinasional.
 
-        Respons HARUS berupa JSON Array murni berisi list objek per id_entitas (tanpa markdown ```json, tanpa penjelasan teks pembuka/penutup):
+        Respons HARUS berupa JSON Array murni (tanpa markdown, tanpa penjelasan tambahan). 
+
+        CONTOH INPUT 'prompt_user':
+        "Cari supplier kopi di Vietnam"
+        
+        CONTOH OUTPUT UNTUK INPUT TERSEBUT:
         [
           {
             "id_entitas": 1,
             "search_targets": [
-              { "tipe_bisnis": "Konsumen Hilir (Cafe/Roastery)", "maps_search_query": "Specialty Coffee Cafe Kuala Lumpur" },
-              { "tipe_bisnis": "Distributor/Grosir", "maps_search_query": "Coffee Wholesaler Supplier Kuala Lumpur" },
-              { "tipe_bisnis": "Importir/Pabrik Besar", "maps_search_query": "Coffee Importer Processing Factory Malaysia" }
+              { "tipe_bisnis": "Pengrajin/Workshop", "maps_search_query": "Coffee bean local producer Vietnam" },
+              { "tipe_bisnis": "Pabrik/Supplier Menengah", "maps_search_query": "Coffee processing company Vietnam" },
+              { "tipe_bisnis": "Pabrik Besar/Eksportir", "maps_search_query": "Large scale coffee exporter Vietnam" }
             ]
           }
         ]
+
+        CONTOH INPUT 'prompt_user' DENGAN URL:
+        "Cari buyer briket di sini: https://www.google.com/maps/search/sisha+johor/..."
+        
+        CONTOH OUTPUT UNTUK INPUT URL:
+        [
+          {
+            "id_entitas": 1,
+            "search_targets": [
+              { "tipe_bisnis": "Briket Buyer Area Johor Malaysia", "maps_search_query": "https://www.google.com/maps/search/sisha+johor/..." }
+            ]
+          }
+        ] 
         """
         batch_query_schema = types.Schema(
             type=types.Type.ARRAY,
@@ -367,8 +382,14 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
                 jumlah_per_kueri = 0
 
                 try:
-                    encoded_q = urllib.parse.quote_plus(maps_query)
-                    maps_url = f"https://www.google.com/maps/search/{encoded_q}?hl=id"
+                    # UBAH MENJADI SEPERTI INI:
+                    if maps_query.startswith("http://") or maps_query.startswith("https://"):
+                        # Jika kueri sudah berupa tautan, gunakan secara langsung
+                        maps_url = maps_query
+                    else:
+                        # Jika kueri berupa teks biasa, lakukan proses encoding
+                        encoded_q = urllib.parse.quote_plus(maps_query)
+                        maps_url = f"https://www.google.com/maps/search/{encoded_q}?hl=id"
                     
                     await page.goto(maps_url, timeout=30000, wait_until="domcontentloaded")
                     await page.wait_for_timeout(2000)
@@ -378,15 +399,45 @@ async def proses_pencarian_leads_bisnis(data_pencarian_untuk_ai, spreadsheet_id,
                     try:
                         await page.wait_for_selector(scrollable_sidebar_selector, timeout=15000)
                         
-                        for scroll_step in range(4):
+                        # Tentukan batas maksimal data dan putaran scroll
+                        BATAS_AMAN_DATA = 60       # Batas maksimal profil yang ingin diambil per kueri
+                        MAX_SCROLL_ATTEMPTS = 30   # Batas keras maksimal scroll (Hard limit fallback)
+                        
+                        previous_count = 0
+                        
+                        for scroll_step in range(MAX_SCROLL_ATTEMPTS):
+                            # 1. Hitung jumlah elemen profil yang ada di sidebar saat ini
+                            current_elements = await page.query_selector_all("a[href*='/maps/place/']")
+                            current_count = len(current_elements)
+                            
+                            # 2. Kondisi Berhenti Pertama: Batas aman data tercapai
+                            if current_count >= BATAS_AMAN_DATA:
+                                print(f"        [+] Batas aman tercapai ({current_count} data). Menghentikan scroll.")
+                                break
+                                
+                            # 3. Kondisi Berhenti Kedua: Mentok di paling bawah (tidak ada penambahan data baru)
+                            if current_count > 0 and current_count == previous_count:
+                                # Lakukan verifikasi ulang dengan jeda tambahan untuk memastikan bukan karena delay jaringan lambat
+                                await page.wait_for_timeout(1500)
+                                check_again_elements = await page.query_selector_all("a[href*='/maps/place/']")
+                                if len(check_again_elements) == previous_count:
+                                    print(f"        [+] Mencapai akhir daftar di {current_count} data. Menghentikan scroll.")
+                                    break
+                                
+                            previous_count = current_count
+                            
+                            # 4. Lakukan eksekusi scroll ke bawah
                             sidebar_element = await page.query_selector(scrollable_sidebar_selector)
                             if sidebar_element:
                                 box = await sidebar_element.bounding_box()
                                 if box:
                                     await page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
-                                    await page.mouse.wheel(0, 3000)
+                                    # Tingkatkan sedikit nilai scroll (dari 3000 ke 4000) agar memuat lebih cepat
+                                    await page.mouse.wheel(0, 4000) 
                             
-                            await page.wait_for_timeout(1500)
+                            # Beri jeda sistem untuk proses lazy-loading Google Maps
+                            await page.wait_for_timeout(1800)
+                            
                     except Exception as scroll_err:
                         print(f"        [!] Peringatan kendala scrolling sidebar: {scroll_err}")
                     
